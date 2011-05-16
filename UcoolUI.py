@@ -2,6 +2,8 @@
 import SimpleHTTPServer
 import SocketServer
 import os
+import subprocess
+import sys
 import thread
 import threading
 import Server
@@ -105,6 +107,10 @@ class UcoolFrame(wx.Frame):
 
     # 服务端口切换
     def onPortChange(self, event):
+        if not hasattr(self, 'PROXYPATH'):
+            dlg = wx.MessageDialog(self, '请选择一个目录！', style=wx.OK)
+            dlg.ShowModal()
+            return
         if self.btnServerToggle.GetValue():
             # 单独开一个线程跑端口
             self.serverChange(True)
@@ -119,12 +125,15 @@ class UcoolFrame(wx.Frame):
 
     def serverChange(self, open):
         if open:
-            if not hasattr(self, "portThread"):
-#            if not self.portThread in self:
-                self.portThread = thread.start_new_thread(self.serverStart, (self.PROXYPATH,))
+            self.p = subprocess.Popen('python Server.py ' + self.PROXYPATH)
         else:
-            self.portThread.exit()
-            
+            try:
+                self.p.terminate()
+            except:
+                print 'over'
+            finally:
+                self.p.kill()
+
     def serverStart(self, WEBROOT):
         PortHandler.setWEBROOT(WEBROOT)
         httpd = SocketServer.TCPServer(("", PORT), PortHandler)
